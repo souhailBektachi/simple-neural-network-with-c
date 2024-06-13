@@ -1,6 +1,12 @@
 #include "matrix.h"
-
-bool matrix_isnull(matrix **m)
+#include <sys/stat.h>
+int check_dimensions(matrix *a, matrix *b)
+{
+    if (a->rows == b->rows && a->cols == b->cols)
+        return 1;
+    return 0;
+}
+bool matrix_isnull(matrix *m)
 {
 
     if (m == NULL)
@@ -10,104 +16,123 @@ bool matrix_isnull(matrix **m)
     }
     return false;
 }
-void matrix_init(matrix **m, int rows, int cols)
+matrix *matrix_init(int rows, int cols)
 {
-    (*m) = (matrix *)malloc(sizeof(matrix));
-    (*m)->rows = rows;
-    (*m)->cols = cols;
-    (*m)->data = (float **)malloc(rows * sizeof(float *));
+    matrix *m = malloc(sizeof(matrix));
+    m->rows = rows;
+    m->cols = cols;
+    m->data = malloc(rows * sizeof(double_t *));
     for (int i = 0; i < rows; i++)
     {
-        (*m)->data[i] = (float *)malloc(cols * sizeof(float));
+        m->data[i] = malloc(cols * sizeof(double_t));
     }
+    return m;
 }
 
-void matrix_free(matrix **m)
+void matrix_free(matrix *m)
 {
-    if (matrix_isnull(m))
-        return;
-    for (int i = 0; i < (*m)->rows; i++)
+
+    for (int i = 0; i < m->rows; i++)
     {
-        free((*m)->data[i]);
+
+        free(m->data[i]);
     }
-    free((*m)->data);
-    free(*m);
+    free(m->data);
+    free(m);
+    m = NULL;
 }
-void matrix_print(matrix **m)
+void matrix_print(matrix *m)
 {
     if (matrix_isnull(m))
         return;
-    for (int i = 0; i < (*m)->rows; i++)
+    for (int i = 0; i < m->rows; i++)
     {
-        for (int j = 0; j < (*m)->cols; j++)
+        for (int j = 0; j < m->cols; j++)
         {
-            printf("%f ", (*m)->data[i][j]);
+            printf("%f ", m->data[i][j]);
         }
         printf("\n");
     }
+    printf("\n");
 }
-void matrix_randomize(matrix **m)
+double_t uniform_destribution(double_t min, double_t max)
+{
+    double_t difference = max - min;
+    int scale = 10000;
+    int scaled_difference = (int)(difference * scale);
+    return min + (1.0 * (rand() % scaled_difference) / scale);
+}
+void matrix_randomize(matrix *m, int n)
 {
     if (matrix_isnull(m))
         return;
-    for (int i = 0; i < (*m)->rows; i++)
+    double_t min = -1.0 / sqrt(n);
+    double_t max = 1.0 / sqrt(n);
+    for (int i = 0; i < m->rows; i++)
     {
-        for (int j = 0; j < (*m)->cols; j++)
+        for (int j = 0; j < m->cols; j++)
         {
-            (*m)->data[i][j] = (float)rand() / RAND_MAX;
+            m->data[i][j] = uniform_destribution(min, max);
         }
     }
 }
-void matrix_add(matrix **m, matrix **a, matrix **b)
+matrix *matrix_add(matrix *a, matrix *b)
+{
+    if (!check_dimensions(a, b))
+    {
+        exit(1);
+    }
+    matrix *m = matrix_init(a->rows, a->cols);
+    for (int i = 0; i < a->rows; i++)
+    {
+        for (int j = 0; j < b->cols; j++)
+        {
+            m->data[i][j] = a->data[i][j] + b->data[i][j];
+        }
+    }
+    return m;
+}
+matrix *matrix_sub(matrix *a, matrix *b)
+{
+    if (!check_dimensions(a, b))
+    {
+        exit(1);
+    }
+    matrix *m = matrix_init(a->rows, a->cols);
+    for (int i = 0; i < a->rows; i++)
+    {
+        for (int j = 0; j < b->cols; j++)
+        {
+            m->data[i][j] = a->data[i][j] - b->data[i][j];
+        }
+    }
+    return m;
+}
+matrix *matrix_mul(matrix *a, matrix *b)
 {
 
-    if (matrix_isnull(m))
-        return;
-    for (int i = 0; i < (*m)->rows; i++)
+    if (!check_dimensions(a, b))
     {
-        for (int j = 0; j < (*m)->cols; j++)
+        exit(1);
+    }
+    matrix *m = matrix_init(a->rows, a->cols);
+    for (int i = 0; i < a->rows; i++)
+    {
+        for (int j = 0; j < b->cols; j++)
         {
-            (*m)->data[i][j] = (*a)->data[i][j] + (*b)->data[i][j];
+            m->data[i][j] = a->data[i][j] * b->data[i][j];
         }
     }
+    return m;
 }
-void matrix_sub(matrix **m, matrix **a, matrix **b)
+matrix *matrix_copy(matrix *m)
 {
-    if (matrix_isnull(m))
-        return;
-    for (int i = 0; i < (*m)->rows; i++)
+    matrix *copy = matrix_init(m->rows, m->cols);
+    for (int i = 0; i < m->rows; i++)
     {
-        for (int j = 0; j < (*m)->cols; j++)
+        for (int j = 0; j < m->cols; j++)
         {
-            (*m)->data[i][j] = (*a)->data[i][j] - (*b)->data[i][j];
-        }
-    }
-}
-void matrix_mul(matrix **m, matrix **a, matrix **b)
-{
-    if (matrix_isnull(m))
-        return;
-    for (int i = 0; i < (*m)->rows; i++)
-    {
-        for (int j = 0; j < (*m)->cols; j++)
-        {
-            (*m)->data[i][j] = 0;
-            for (int k = 0; k < (*a)->cols; k++)
-            {
-                (*m)->data[i][j] += (*a)->data[i][k] * (*b)->data[k][j];
-            }
-        }
-    }
-}
-matrix *matrix_copy(matrix **m)
-{
-    matrix *copy;
-    matrix_init(&copy, (*m)->rows, (*m)->cols);
-    for (int i = 0; i < (*m)->rows; i++)
-    {
-        for (int j = 0; j < (*m)->cols; j++)
-        {
-            copy->data[i][j] = (*m)->data[i][j];
+            copy->data[i][j] = m->data[i][j];
         }
     }
     return copy;
@@ -120,8 +145,7 @@ matrix *load_matrix(const char *filename)
     int rows = atoi(entry);
     fgets(entry, MAX, file);
     int cols = atoi(entry);
-    matrix *m;
-    matrix_init(&m, rows, cols);
+    matrix *m = matrix_init(rows, cols);
     for (int i = 0; i < m->rows; i++)
     {
         for (int j = 0; j < m->cols; j++)
@@ -134,146 +158,155 @@ matrix *load_matrix(const char *filename)
     fclose(file);
     return m;
 }
-void save_matrix(matrix **m, const char *filename)
+void save_matrix(matrix *m, const char *filename)
 {
-    matrix *matrix = *m;
-    FILE *file = fopen(filename, "w");
-    fprintf(file, "%d\n", matrix->rows);
-    fprintf(file, "%d\n", matrix->cols);
-    for (int i = 0; i < matrix->rows; i++)
+
+    char *folder = "models/";
+    char *path = malloc(strlen(folder) + strlen(filename) + 1);
+    strcpy(path, folder);
+    strcat(path, filename);
+    // if windows
+    MKDIR(folder);
+
+    FILE *file = fopen(path, "w");
+    fprintf(file, "%d\n", m->rows);
+    fprintf(file, "%d\n", m->cols);
+    for (int i = 0; i < m->rows; i++)
     {
-        for (int j = 0; j < matrix->cols; j++)
+        for (int j = 0; j < m->cols; j++)
         {
-            fprintf(file, "%.6f\n", matrix->data[i][j]);
+            fprintf(file, "%.6f\n", m->data[i][j]);
         }
     }
     printf("Successfully saved matrix to %s\n", filename);
+    free(path);
     fclose(file);
 }
-int matrix_argmax(matrix **m)
+void matrix_fill(matrix *m, double_t val)
+{
+    for (int i = 0; i < m->rows; i++)
+    {
+        for (int j = 0; j < m->cols; j++)
+        {
+            m->data[i][j] = val;
+        }
+    }
+}
+int matrix_argmax(matrix *m)
 {
     if (matrix_isnull(m))
         return -1;
-    int max_index = 0;
-    float max = (*m)->data[0][0];
-    for (int i = 0; i < (*m)->rows; i++)
+    double_t max_score = 0;
+    int max_idx = 0;
+    for (int i = 0; i < m->rows; i++)
     {
-        for (int j = 0; j < (*m)->cols; j++)
+        if (m->data[i][0] > max_score)
         {
-            if ((*m)->data[i][j] > max)
-            {
-                max = (*m)->data[i][j];
-                max_index = i;
-            }
+            max_score = m->data[i][0];
+            max_idx = i;
         }
     }
-    return max_index;
+    return max_idx;
 }
-matrix *matrix_flatten(matrix **m, int axis)
+matrix *matrix_flatten(matrix *m, int axis)
+{
+    matrix *mat;
+    if (axis == 0)
+    {
+        mat = matrix_init(m->rows * m->cols, 1);
+    }
+    else if (axis == 1)
+    {
+        mat = matrix_init(1, m->rows * m->cols);
+    }
+    else
+    {
+        printf("Argument to matrix_flatten must be 0 or 1");
+        exit(EXIT_FAILURE);
+    }
+    for (int i = 0; i < m->rows; i++)
+    {
+        for (int j = 0; j < m->cols; j++)
+        {
+            if (axis == 0)
+                mat->data[i * m->cols + j][0] = m->data[i][j];
+            else if (axis == 1)
+                mat->data[0][i * m->cols + j] = m->data[i][j];
+        }
+    }
+    return mat;
+}
+
+matrix *dot(matrix *a, matrix *b)
+{
+
+    if (!(a->cols == b->rows))
+    {
+        exit(1);
+    }
+    matrix *m = matrix_init(a->rows, b->cols);
+    for (int i = 0; i < a->rows; i++)
+    {
+        for (int j = 0; j < b->cols; j++)
+        {
+            double_t sum = 0;
+            for (int k = 0; k < b->rows; k++)
+            {
+                sum += a->data[i][k] * b->data[k][j];
+            }
+            m->data[i][j] = sum;
+        }
+    }
+    return m;
+}
+matrix *apply(matrix *m, double_t (*func)(double_t))
 {
     if (matrix_isnull(m))
         return NULL;
-    matrix *flattened;
-    if (axis == 0)
-    {
-        matrix_init(&flattened, (*m)->rows * (*m)->cols, 1);
-        for (int i = 0; i < (*m)->rows; i++)
-        {
-            for (int j = 0; j < (*m)->cols; j++)
-            {
-                flattened->data[i * (*m)->cols + j][0] = (*m)->data[i][j];
-            }
-        }
-    }
-    else
-    {
-        matrix_init(&flattened, 1, (*m)->rows * (*m)->cols);
-        for (int i = 0; i < (*m)->rows; i++)
-        {
-            for (int j = 0; j < (*m)->cols; j++)
-            {
-                flattened->data[0][i * (*m)->cols + j] = (*m)->data[i][j];
-            }
-        }
-    }
-    return flattened;
-}
-
-void dot(matrix **m, matrix **a, matrix **b)
-{
-    if (matrix_isnull(m))
-        return;
-    matrix *m1 = *a;
-    matrix *m2 = *b;
-
-    if (m1->cols == m2->rows)
-    {
-        (*m) = matrix_create(m1->rows, m2->cols);
-        for (int i = 0; i < m1->rows; i++)
-        {
-            for (int j = 0; j < m2->cols; j++)
-            {
-                double sum = 0;
-                for (int k = 0; k < m2->rows; k++)
-                {
-                    sum += m1->data[i][k] * m2->data[k][j];
-                }
-                (*m)->data[i][j] = sum;
-            }
-        }
-    }
-    else
-    {
-        printf("Dimension mistmatch dot: %dx%d %dx%d\n", m1->rows, m1->cols, m2->rows, m2->cols);
-        exit(1);
-    }
-}
-void apply(matrix **m, float (*func)(float))
-{
-    if (matrix_isnull(m))
-        return;
-    m = matrix_copy(m);
-    for (int i = 0; i < (*m)->rows; i++)
-    {
-        for (int j = 0; j < (*m)->cols; j++)
-        {
-            (*m)->data[i][j] = func((*m)->data[i][j]);
-        }
-    }
-}
-matrix *scalar(matrix **m, float scalar)
-{
-    matrix *result = matrix_copy(m);
-    for (int i = 0; i < (*m)->rows; i++)
-    {
-        for (int j = 0; j < (*m)->cols; j++)
-        {
-            result->data[i][j] = (*m)->data[i][j] * scalar;
-        }
-    }
-    return result;
-}
-matrix *add_scalar(matrix **m, float scalar)
-{
-    matrix *result = matrix_copy(m);
-    for (int i = 0; i < (*m)->rows; i++)
-    {
-        for (int j = 0; j < (*m)->cols; j++)
-        {
-            result->data[i][j] = (*m)->data[i][j] + scalar;
-        }
-    }
-    return result;
-}
-matrix *transpose(matrix **m)
-{
     matrix *result;
-    matrix_init(&result, (*m)->cols, (*m)->rows);
-    for (int i = 0; i < (*m)->rows; i++)
+    result = matrix_copy(m);
+    for (int i = 0; i < m->rows; i++)
     {
-        for (int j = 0; j < (*m)->cols; j++)
+        for (int j = 0; j < m->cols; j++)
         {
-            result->data[j][i] = (*m)->data[i][j];
+            result->data[i][j] = func(m->data[i][j]);
+        }
+    }
+
+    return result;
+}
+matrix *scalar(matrix *m, double_t scalar)
+{
+    matrix *mat = matrix_copy(m);
+    for (int i = 0; i < m->rows; i++)
+    {
+        for (int j = 0; j < m->cols; j++)
+        {
+            mat->data[i][j] *= scalar;
+        }
+    }
+    return mat;
+}
+matrix *add_scalar(matrix *m, double_t scalar)
+{
+    matrix *result = matrix_copy(m);
+    for (int i = 0; i < m->rows; i++)
+    {
+        for (int j = 0; j < m->cols; j++)
+        {
+            result->data[i][j] = m->data[i][j] + scalar;
+        }
+    }
+    return result;
+}
+matrix *transpose(matrix *m)
+{
+    matrix *result = matrix_init(m->cols, m->rows);
+    for (int i = 0; i < m->rows; i++)
+    {
+        for (int j = 0; j < m->cols; j++)
+        {
+            result->data[j][i] = m->data[i][j];
         }
     }
     return result;
