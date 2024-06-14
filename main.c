@@ -8,16 +8,13 @@
 #include <time.h>
 int main()
 {
-    srand(time(NULL));
+    srand(clock());
     // training data
     int num_of_images = 10000;
     image **images = csv_to_image("dataset/data/mnist_train.csv", num_of_images);
     neural *nn = neural_init(784, 300, 10, 0.1);
-    printf("\n%f\n", nn->weights_ih->data[0][0]);
-
-    printf("Accuracy: %f\n", neural_accuracy(nn, images, num_of_images));
+    printf("Training...\n");
     neural_train_batch_image(nn, images, num_of_images);
-    printf("\n%f\n", nn->weights_ih->data[0][0]);
 
     printf("Accuracy: %f\n", neural_accuracy(nn, images, num_of_images));
     neural_save(nn, "neural.model");
