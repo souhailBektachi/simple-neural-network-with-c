@@ -32,6 +32,7 @@ void neural_train(neural *n, matrix *input, matrix *output)
     matrix *transposed = transpose(n->weights_ho);
     matrix *hidden_errors = dot(transposed, output_errors);
     matrix_free(transposed);
+
     // backpropagation
     matrix *gradients = sigmoid_prime_matrix(outputs);
     matrix *multiplied = matrix_mul(output_errors, gradients);
@@ -111,6 +112,8 @@ void neural_train_batch_image(neural *n, image **images, int batch_size)
 {
     for (int i = 0; i < batch_size; i++)
     {
+        if (i % 100 == 0)
+            printf("Training %d/%d\n", i, batch_size);
         matrix *input, *output;
         image *img = images[i];
         input = matrix_flatten(img->data, 0);
