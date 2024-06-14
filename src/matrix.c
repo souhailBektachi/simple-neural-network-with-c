@@ -59,8 +59,11 @@ double_t uniform_destribution(double_t min, double_t max)
 {
     double_t difference = max - min;
     int scale = 10000;
-    int scaled_difference = (int)(difference * scale);
-    return min + (1.0 * (rand() % scaled_difference) / scale);
+    double_t scaled_difference = difference * scale;
+
+    double_t random_scaled = (double_t)(rand() % (int)scaled_difference) / scale;
+
+    return min + random_scaled;
 }
 void matrix_randomize(matrix *m, int n)
 {
