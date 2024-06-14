@@ -6,6 +6,11 @@ image **csv_to_image(char *path, int num_of_images)
     image **imgs = malloc(num_of_images * sizeof(image *));
     char row[MAXCHAR];
     fp = fopen(path, "r");
+    if (fp == NULL)
+    {
+        printf("Could not open file %s", path);
+        exit(1);
+    }
 
     // Read the first line
     fgets(row, MAXCHAR, fp);
